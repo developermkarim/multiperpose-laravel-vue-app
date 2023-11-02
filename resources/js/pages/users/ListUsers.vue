@@ -1,3 +1,4 @@
+/* Vue Component of use Here for data fetching of API OF LARAVEL  */
 <script setup>
 import axios from 'axios';
 import { ref, onMounted } from 'vue';
@@ -50,6 +51,7 @@ onMounted(() => {
                             </tr>
                         </thead>
                         <tbody>
+                            <!-- View data looping Here -->
                             <tr v-for="(user, index) in users" :key="user.id">
                                 <td>{{ index + 1 }}</td>
                                 <td>{{ user.name }}</td>
@@ -65,3 +67,5 @@ onMounted(() => {
         </div>
     </div>
 </template>
+
+/* This File will be exported to route file where all routes are defined */

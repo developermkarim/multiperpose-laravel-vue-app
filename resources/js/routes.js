@@ -1,6 +1,6 @@
 import Dashboard from './components/Dashboard.vue';
 import ListAppointments from './pages/appointments/ListAppointments.vue';
-import ListUsers from './pages/appointments/ListAppointments.vue';
+import ListUsers from './pages/users/ListUsers.vue';
 
 export default [
     {
@@ -20,3 +20,5 @@ export default [
     },
     
 ]
+
+/* All routes of component of page are bounded here and define their routes. */
