@@ -24,4 +24,27 @@ class UserController extends Controller
         ]);
         return $user;
     }
+
+    public function update(User $user)
+    {
+        $updateUser = $user->update([
+            'name'=> request('name'),
+            'email'=>request('email'),
+            'password'=> request('password') ? bcrypt(request('password')) : request('password'),
+        ]);
+        return $updateUser;
+    }
+
+
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+        $isDeleted = $user->delete();
+        dd($isDeleted);
+        if ($isDeleted) {
+            return true;
+        }else{
+            return false;
+        }
+    }
 }
