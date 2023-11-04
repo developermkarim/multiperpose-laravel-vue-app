@@ -1,98 +1,105 @@
-/* Vue Component of use Here for data fetching of API OF LARAVEL  */
-<script>
-/* import axios from 'axios';
+/*  Vue Component of use Here for data fetching of API OF LARAVEL   */
+<script setup>
+import axios from 'axios';
 import { ref, onMounted, reactive } from 'vue';
+import { Form, Field, useResetForm } from 'vee-validate';
+import * as yup from 'yup';
 
 const users = ref([]);
-
-const form = reactive({
-        name:'',
-        email:'',
-        password:'',
-});
+const editing = ref(false);
+const formValues = ref();
+const form = ref(null);
 
 const getUsers = () => {
     axios.get('/api/users')
-    .then((response) => {
-        users.value = response.data;
+        .then((response) => {
+            users.value = response.data;
+        })
+}
+
+const createUserSchema = yup.object({
+    name: yup.string().required(),
+    email: yup.string().email().required(),
+    password: yup.string().required().min(8),
+});
+
+const editUserSchema = yup.object({
+    name: yup.string().required(),
+    email: yup.string().email().required(),
+    password: yup.string().when((password, schema) => {
+        return password ? schema.required().min(8) : schema;
+    }),
+});
+
+const createUser = (values, { resetForm,setErrors}) => {
+    axios.post('/api/users', values)
+        .then((response) => {
+            users.value.unshift(response.data);
+            $('#userFormModal').modal('hide');
+            resetForm();
+        })
+        .catch(error=>{
+            setErrors(error.response.data.errors)
+        });
+};
+
+const addUser = () => {
+    editing.value = false;
+    $('#userFormModal').modal('show');
+    formValues.value = {
+        id:'',
+        name:'',
+        email:'',
+    }
+};
+
+const editUser = (user) => {
+    editing.value = true;
+    form.value.resetForm();
+    $('#userFormModal').modal('show');
+    formValues.value = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+    };
+};
+
+const updateUser = (values,{setErrors}) => {
+    axios.put('/api/users/' + formValues.value.id, values)
+        .then((response) => {
+            const index = users.value.findIndex(user => user.id === response.data.id);
+            users.value[index] = response.data;
+            $('#userFormModal').modal('hide');
+        }).catch((error) => {
+            console.log(error);
+            setErrors(error.response.data.error)
+        }).finally(() => {
+            form.value.resetForm();
+        });
+};
+
+const deleteUser = (user) =>{
+    axios.delete('/app/users/' + user.id)
+    .then(res=>{
+
+    })
+    .catch(error=>{
+        console.log(error);
     })
 }
 
-const postUserData = () =>{
-            axios.post('/api/users',form)
-        .then(res=>{
-            this.users.unshift(res.data);
-            clearForm();
-            $('#createUserModal').modal('hide');
-        })
-        .catch(error=>{
-            console.log(error);
-        })
+const handleSubmit = (values, actions) => {
+    if (editing.value) {
+        updateUser(values,actions);
+    } else {
+        createUser(values, actions);
+    }
 }
 
 onMounted(() => {
     getUsers();
-}); */
-import axios from 'axios';
-import { ref } from 'vue';
+});
 
-export default {
-  data() {
-    return {
-      users: [],
-      createUsers:{
-        name:'',
-        email:'',
-        password:'',
-
-      }
-    };
-  },
-  mounted() {
-    this.getUsers();
-  },
-  methods: {
-    getUsers() {
-      axios.get('/api/users')
-        .then((response) => {
-          this.users = response.data;
-        })
-        .catch((error) => {
-          console.error('Error fetching users:', error);
-        });
-    },
-    postUserData(){
-        axios.post('/api/users',this.createUsers)
-        .then(res=>{
-            this.users.unshift(res.data);
-            this.clearForm();
-            $('#createUserModal').modal('hide');
-        })
-        .catch(error=>{
-            console.log(error);
-        })
-    },
-    clearForm(){
-        this.createUsers={
-                name:'',
-                email:'',
-                password:'',
-     };
-    },
-    updateUser(){
-        
-    },
-    deleteUser(id){
-        axios.delete('api/user/' + id)
-        .then(res=>{
-            console.log(res);
-        })
-        .catch(error=>{
-            console.log(error);
-        })
-    }
-  }
-};
 </script>
 
 <template>
@@ -115,10 +122,9 @@ export default {
 
     <div class="content">
         <div class="container-fluid">
-        <button type="button" class="mb-2 btn btn-primary" data-toggle="modal" data-target="#createUserModal">
+            <button @click="addUser" type="button" class="mb-2 btn btn-primary">
                 Add New User
             </button>
-
             <div class="card">
                 <div class="card-body">
                     <table class="table table-bordered">
@@ -133,67 +139,67 @@ export default {
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- View data looping Here -->
                             <tr v-for="(user, index) in users" :key="user.id">
                                 <td>{{ index + 1 }}</td>
                                 <td>{{ user.name }}</td>
                                 <td>{{ user.email }}</td>
                                 <td>-</td>
                                 <td>-</td>
-                                <td class="text-right py-0 align-middle">
-                            <div class="btn-group btn-group-sm">
-                            <a href="#" class="btn btn-outline-info"><i class="fas fa-eye"></i> </a> 
-                            
-                            <a href="#" class="btn btn-outline-primary"><i class="fas fa-edit"></i> </a>
-
-                            <a href="#" @click="deleteUser(user.id)" class="btn btn-outline-danger"><i class="fas fa-trash"></i> </a>
-                            </div>
-                            </td>
+                                <td>
+                                    <a href="#" @click.prevent="editUser(user)"><i class="fa fa-edit"></i></a>
+                                    <a class="text-danger ml-2" href="#" @click.prevent="deleteUser(user)"><i class="fa fa-trash"></i></a>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-
-            <!-- Modal of Create User Start -->
-            <div class="modal fade show" id="createUserModal" tabindex="-1" role="dialog" aria-labelledby="loginModalLabel" aria-modal="true" style="padding-right: 16px;">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="loginModalLabel">Login</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">×</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form>
-        <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" v-model="createUsers.name" class="form-control username" id="username" placeholder="Enter your username">
-        </div>
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input type="text" v-model="createUsers.email" class="form-control username" id="email" placeholder="email (e.g. example@gmail.com)">
-        </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input v-model="createUsers.password" type="password" class="form-control password" id="password" placeholder="Enter your password">
-        </div>
-        <button type="submit" @click.prevent="postUserData" class="btn btn-primary btn-block">Login</button>
-        </form>
-
-      </div>
-      <div class="modal-footer">
-          <p class="mr-auto">Don't have an account? <a href="#">Sign up</a></p>
-          <button type="button" class="btn btn-secondary" @click="clearForm" data-dismiss="modal">Close</button>
         </div>
     </div>
-  </div>
-</div>
-            <!-- Modal of Create User End-->
 
+    <div class="modal fade" id="userFormModal" data-backdrop="static" tabindex="-1" role="dialog"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">
+                        <span v-if="editing">Edit User</span>
+                        <span v-else>Add New User</span>
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <Form ref="form" @submit="handleSubmit" :validation-schema="editing ? editUserSchema : createUserSchema" v-slot="{ errors }" :initial-values="formValues">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="name">Name</label>
+                            <Field name="name" type="text" class="form-control" :class="{'is-invalid': errors.name }" id="name"
+                                aria-describedby="nameHelp" placeholder="Enter full name" />
+                            <span class="invalid-feedback">{{ errors.name }}</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <Field name="email" type="email" class="form-control " :class="{'is-invalid': errors.email }" id="email"
+                                aria-describedby="nameHelp" placeholder="Enter full name" />
+                            <span class="invalid-feedback">{{ errors.email }}</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Password</label>
+                            <Field name="password" type="password" class="form-control " :class="{'is-invalid': errors.password }" id="password"
+                                aria-describedby="nameHelp" placeholder="Enter password" />
+                            <span class="invalid-feedback">{{ errors.password }}</span>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </Form>
+            </div>
         </div>
     </div>
 </template>
-
 /* This File will be exported to route file where all routes are defined */
