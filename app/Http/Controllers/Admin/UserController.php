@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use function PHPSTORM_META\map;
 
 class UserController extends Controller
 {
@@ -12,9 +14,20 @@ class UserController extends Controller
     public function index()
     {
         $user = User::latest()->get();
-        return $user;
+        
+   /*      $user = User::latest()->get()->map(function($user){
 
+            return [
+                'id'=>$user->id,
+                'name'=>$user->name,
+                'email'=>$user->email,
+                'created_at'=> $user->created_at->toFormattedDate()
+            ];
+        }); */
+         
+        return $user;
     }
+
     public function store()
     {
         request()->validate([
