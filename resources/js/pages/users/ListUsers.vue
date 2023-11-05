@@ -3,14 +3,15 @@
 import axios from 'axios';
 import { ref, onMounted, reactive } from 'vue';
 import { Form, Field, useResetForm } from 'vee-validate';
-import { useToastr } from '../../toastr.js';
 import * as yup from 'yup';
+import { useToastr } from '../../toastr.js';
 
 const toastr = useToastr();
 const users = ref([]);
 const editing = ref(false);
 const formValues = ref();
 const form = ref(null);
+const userIdBeingDeleted = ref(null);
 
 const getUsers = () => {
     axios.get('/api/users')
@@ -22,38 +23,41 @@ const getUsers = () => {
 const createUserSchema = yup.object({
     name: yup.string().required(),
     email: yup.string().email().required(),
-    password: yup.string().required().min(8),
+    password: yup.string().required().min(5),
 });
 
 const editUserSchema = yup.object({
     name: yup.string().required(),
     email: yup.string().email().required(),
     password: yup.string().when((password, schema) => {
-        return password ? schema.required().min(8) : schema;
+        return password ? schema.required().min(5) : schema;
     }),
 });
 
-const createUser = (values, { resetForm,setErrors}) => {
+const createUser = (values, { resetForm, setErrors }) => {
     axios.post('/api/users', values)
         .then((response) => {
             users.value.unshift(response.data);
             $('#userFormModal').modal('hide');
             resetForm();
-            toastr.success('New User Created Successfully');
+            toastr.success('User created successfully!');
         })
-        .catch(error=>{
-            setErrors(error.response.data.errors)
-        });
+        .catch((error) => {
+            if (error.response.data.errors) {
+                setErrors(error.response.data.errors);
+            }
+        })
 };
 
-const addUser = () => {
+const addUser = ({resetForm}) => {
     editing.value = false;
     $('#userFormModal').modal('show');
-    formValues.value = {
+        formValues.value = {
         id:'',
         name:'',
         email:'',
-    }
+    };
+    
 };
 
 const editUser = (user) => {
@@ -67,43 +71,45 @@ const editUser = (user) => {
     };
 };
 
-const updateUser = (values,{setErrors}) => {
+const updateUser = (values, {setErrors}) => {
     axios.put('/api/users/' + formValues.value.id, values)
         .then((response) => {
             const index = users.value.findIndex(user => user.id === response.data.id);
             users.value[index] = response.data;
             $('#userFormModal').modal('hide');
-            toastr.success("User Data updated Successfully");
+            toastr.success('User updated successfully!');
         }).catch((error) => {
+            setErrors(error.response.data.errors);
             console.log(error);
-            setErrors(error.response.data.error)
-        }).finally(() => {
-            form.value.resetForm();
         });
-};
-
-const deleteUser = (user) =>{
-    axios.delete('/app/users/' + user.id)
-    .then(res=>{
-
-    })
-    .catch(error=>{
-        console.log(error);
-    })
 }
 
 const handleSubmit = (values, actions) => {
+    // console.log(actions);
     if (editing.value) {
-        updateUser(values,actions);
+        updateUser(values, actions);
     } else {
         createUser(values, actions);
     }
 }
 
+const confirmUserDeletion = (user) => {
+    userIdBeingDeleted.value = user.id;
+    $('#deleteUserModal').modal('show');
+};
+
+const deleteUser = () => {
+    axios.delete(`/api/users/${userIdBeingDeleted.value}`)
+    .then(() => {
+        $('#deleteUserModal').modal('hide');
+        users.value = users.value.filter(user => user.id !== userIdBeingDeleted.value);
+        toastr.success('User deleted successfully!');
+    });
+};
+
 onMounted(() => {
     getUsers();
 });
-
 </script>
 
 <template>
@@ -151,7 +157,7 @@ onMounted(() => {
                                 <td>-</td>
                                 <td>
                                     <a href="#" @click.prevent="editUser(user)"><i class="fa fa-edit"></i></a>
-                                    <a class="text-danger ml-2" href="#" @click.prevent="deleteUser(user)"><i class="fa fa-trash"></i></a>
+                                    <a href="#" @click.prevent="confirmUserDeletion(user)"><i class="fa fa-trash text-danger ml-2"></i></a>
                                 </td>
                             </tr>
                         </tbody>
@@ -202,6 +208,29 @@ onMounted(() => {
                         <button type="submit" class="btn btn-primary">Save</button>
                     </div>
                 </Form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteUserModal" data-backdrop="static" tabindex="-1" role="dialog"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">
+                        <span>Delete User</span>
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h5>Are you sure you want to delete this user ?</h5>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button @click.prevent="deleteUser" type="button" class="btn btn-primary">Delete User</button>
+                </div>
             </div>
         </div>
     </div>

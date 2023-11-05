@@ -18,7 +18,9 @@ class UserController extends Controller
     public function store()
     {
         request()->validate([
+            'name'=>'required|string',
             'email' => 'required|unique:users,email',
+            'password'=>'required|min:5|max:8'
         ]);
 
         $user = User::create([
@@ -32,15 +34,17 @@ class UserController extends Controller
     public function update(User $user)
     {
         request()->validate([
-            'email' => 'required|unique:users,email' . $user->id,
+            'name'=>'required|string',
+            'email' => 'required|unique:users,email,' . $user->id,
+            'password'=>'sometimes|min:5|max:8'
         ]);
 
-        $updateUser = $user->update([
+        $user->update([
             'name'=> request('name'),
             'email'=>request('email'),
             'password'=> request('password') ? bcrypt(request('password')) : request('password'),
         ]);
-        return $updateUser;
+        return $user;
     }
 
 
@@ -48,11 +52,11 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
         $isDeleted = $user->delete();
-        dd($isDeleted);
-        if ($isDeleted) {
+        return response()->noContent();
+/*         if ($isDeleted) {
             return true;
         }else{
             return false;
-        }
+        } */
     }
 }
