@@ -5,6 +5,7 @@
         "build": "vite build"
     },
     "devDependencies": {
+        "@types/toastr": "^2.1.42",
         "@vitejs/plugin-vue": "^4.4.0",
         "axios": "^1.1.2",
         "laravel-vite-plugin": "^0.7.2",
@@ -15,6 +16,7 @@
     "dependencies": {
         "admin-lte": "3.2",
         "jquery": "^3.7.1",
+        "toastr": "^2.1.4",
         "vee-validate": "^4.11.8",
         "vue": "^3.3.7",
         "vue-router": "^4.2.5",
