@@ -64,12 +64,21 @@ class UserController extends Controller
     public function destroy($id)
     {
         $user = User::findOrFail($id);
-        $isDeleted = $user->delete();
+         $user->delete();
         return response()->noContent();
 /*         if ($isDeleted) {
             return true;
         }else{
             return false;
         } */
+    }
+
+    public function changeRole(User $user)
+    {
+        $user->update([
+            'role' => request('role'),
+        ]);
+
+        return response()->json(['success' => true]);
     }
 }

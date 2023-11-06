@@ -28,7 +28,9 @@ Route::put('/api/users/{user}',[UserController::class,'update']);
 
 Route::delete('/api/users/{id}',[UserController::class,'destroy']);
 
-Route::post('/users', 'UserController@store')->name('user.store');
+/* Route::post('/users', 'UserController@store')->name('user.store'); */
+
+Route::put('/api/users/{user}/change-role', [UserController::class, 'changeRole']);
 
 Route::get('{view}',AdminApplicationController::class)->where('view','(.*)');
 /* Route::prefix('admin/')->name('admin.')->controller(adminHomeController::class)->group(function(){
