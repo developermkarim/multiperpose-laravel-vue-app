@@ -1,24 +1,30 @@
 /*  Vue Component of use Here for data fetching of API OF LARAVEL   */
 <script setup>
 import axios from 'axios';
-import { ref, onMounted, reactive } from 'vue';
+import { ref, onMounted, reactive, watch } from 'vue';
 import { Form, Field, useResetForm } from 'vee-validate';
 import * as yup from 'yup';
 import { useToastr } from '../../toastr.js';
 import { formatDate } from '../../helper.js';
 import UserListItem from './UserListItem.vue';
+import { error } from 'toastr';
+import { debounce } from 'lodash';
 
 const toastr = useToastr();
 const users = ref([]);
 const editing = ref(false);
 const formValues = ref();
 const form = ref(null);
+const searchQuery = ref(null);
 // const userIdBeingDeleted = ref(null);
 
 const getUsers = () => {
     axios.get('/api/users')
         .then((response) => {
             users.value = response.data;
+        })
+        .catch(error =>{
+            console.log(error);
         })
 }
 
@@ -112,6 +118,24 @@ const userDeleted = (userId) => {
     users.value = users.value.filter(user => user.id !== userId);
 };
 
+const search = () => {
+    axios.get('/api/users/search', {
+        params: {
+            query: searchQuery.value
+        }
+    })
+    .then(response => {
+        users.value = response.data;
+    })
+    .catch(error => {
+        console.log(error);
+    })
+};
+
+watch(searchQuery, debounce(() => {
+    search();
+}, 300));
+
 onMounted(() => {
     getUsers();
 });
@@ -137,9 +161,18 @@ onMounted(() => {
 
     <div class="content">
         <div class="container-fluid">
+            <div class="d-flex justify-content-between align-items-center">
+            <div>
             <button @click="addUser" type="button" class="mb-2 btn btn-primary">
                 Add New User
             </button>
+            </div>
+            <div>
+            <input type="text" v-model="searchQuery" class="form-control" placeholder="Search...." />
+
+            </div>
+          </div>
+
             <div class="card">
                 <div class="card-body">
                     <table class="table table-bordered">
@@ -153,7 +186,7 @@ onMounted(() => {
                                 <th>Options</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody v-if="users.length > 0">
                     <!--         <tr v-for="(user, index) in users" :key="user.id">
                                 <td>{{ index + 1 }}</td>
                                 <td>{{ user.name }}</td>
@@ -172,6 +205,14 @@ onMounted(() => {
                             @edit-user="editUser"
                             @user-deleted="userDeleted"
                             />
+                        </tbody>
+
+                        <tbody v-else>
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                No Result Found ... with {{ searchQuery }}
+                            </td>
+                        </tr>
                         </tbody>
                     </table>
                 </div>

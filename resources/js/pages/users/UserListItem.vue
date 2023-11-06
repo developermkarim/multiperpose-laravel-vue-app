@@ -62,11 +62,13 @@ axios.put(`/api/users/${user.id}/change-role`, {
         <td>{{ user.name }}</td>
         <td>{{ user.email }}</td>
         <td>{{ formatDate(user.created_at) }}</td>
+        
         <td>
             <select class="form-control" @change="changeRole(user, $event.target.value)">
                 <option v-for="role in roles" :key="role.value" :value="role.value" :selected="(user.role == role.value)">{{ role.name }}</option>
             </select>
         </td>
+
         <td>
             <a href="#" @click.prevent="$emit('editUser', user)"><i class="fa fa-edit"></i></a>
             <a href="#" @click.prevent="confirmUserDeletion(user)"><i class="fa fa-trash text-danger ml-2"></i></a>

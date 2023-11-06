@@ -5,6 +5,7 @@
         "build": "vite build"
     },
     "devDependencies": {
+        "@types/lodash": "^4.14.200",
         "@types/toastr": "^2.1.42",
         "@vitejs/plugin-vue": "^4.4.0",
         "axios": "^1.1.2",
@@ -16,6 +17,7 @@
     "dependencies": {
         "admin-lte": "3.2",
         "jquery": "^3.7.1",
+        "laravel-vue-pagination": "^4.1.1",
         "moment": "^2.29.4",
         "toastr": "^2.1.4",
         "vee-validate": "^4.11.8",
