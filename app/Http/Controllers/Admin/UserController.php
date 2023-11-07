@@ -32,7 +32,7 @@ class UserController extends Controller
         request()->validate([
             'name'=>'required|string',
             'email' => 'required|unique:users,email',
-            'password'=>'required|min:5|max:12'
+            'password'=>'required|min:5|max:15'
         ]);
 
         $user = User::create([
@@ -48,7 +48,7 @@ class UserController extends Controller
         request()->validate([
             'name'=>'required|string',
             'email' => 'required|unique:users,email,' . $user->id,
-            'password'=>'sometimes|min:5|max:8'
+            'password'=>'sometimes|min:5|max:15'
         ]);
 
         $user->update([

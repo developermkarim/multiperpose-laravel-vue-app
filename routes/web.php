@@ -23,14 +23,13 @@ Route::get('/', function () {
 
 Route::get('/api/users',[UserController::class,'index']);
 Route::post('/api/users',[UserController::class,'store']);
-Route::post('/api/users',[UserController::class,'store']);
 Route::put('/api/users/{user}',[UserController::class,'update']);
 
 Route::delete('/api/users/{id}',[UserController::class,'destroy']);
 
 /* Route::post('/users', 'UserController@store')->name('user.store'); */
 
-Route::put('/api/users/{user}/change-role', [UserController::class, 'changeRole']);
+Route::patch('/api/users/{user}/change-role', [UserController::class, 'changeRole']);
 
 Route::get('/api/users/search', [UserController::class, 'searchText']);
 

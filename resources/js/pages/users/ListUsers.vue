@@ -109,16 +109,12 @@ const search = () => {
 };
 
 const selectedUsers = ref([]);
-console.log( 'initial-Result is ref([]) ' + selectedUsers.value);
 const toggleSelection = (user) => {
     const index = selectedUsers.value.indexOf(user.id);
-    console.log(index);
     if (index === -1) {
-        selectedUsers.value.push(user.id); // suppose [36, 35, 33] if not added these (36, 35, 33) into the selectedUsers.value,
-        console.log(selectedUsers.value + ` this is value.push(${user.id})`); 
+        selectedUsers.value.push(user.id);
     } else {
-        selectedUsers.value.splice(index, 1); // [36, 35] if found , will be removed from selectedUsers.value like 33 removed after toggle select
-        console.log(selectedUsers.value + ` this is value.splice(${user.id})`); 
+        selectedUsers.value.splice(index, 1);
     }
     console.log(selectedUsers.value);
 };
@@ -130,11 +126,23 @@ const bulkDelete = () => {
         }
     })
     .then(response => {
-        users.value.data = users.value.data.filter(user => !selectedUsers.value.includes(user.id)); // the Ids of selected not found in the unselected ids, the unselected ids will be return after the multi deleted.
+        users.value.data = users.value.data.filter(user => !selectedUsers.value.includes(user.id));
         selectedUsers.value = [];
+        selectAll.value = false;
         toastr.success(response.data.message);
     });
 };
+
+const selectAll = ref(false);
+const selectAllUsers = () =>{
+    if (selectAll.value) {
+        selectedUsers.value = users.value.data.map(user => user.id);
+    }else{
+        selectedUsers.value = [];
+    }
+    console.log(selectAllUsers.value);
+}
+
 
 watch(searchQuery, debounce(() => {
     search();
@@ -183,7 +191,7 @@ onMounted(() => {
                     <table class="table table-bordered">
                         <thead>
                             <tr>
-                                <th><input type="checkbox" /></th>
+                                <th><input type="checkbox" @change="selectAllUsers" v-model="selectAll" /></th>
                                 <th style="width: 10px">#</th>
                                 <th>Name</th>
                                 <th>Email</th>
@@ -194,7 +202,9 @@ onMounted(() => {
                         </thead>
                         <tbody v-if="users.data.length > 0">
                             <UserListItem v-for="(user, index) in users.data" :key="user.id" :user=user :index=index
-                                @edit-user="editUser" @user-deleted="userDeleted" @toggle-selection="toggleSelection" />
+                                @edit-user="editUser" @user-deleted="userDeleted" @toggle-selection="toggleSelection"
+                                :select-all="selectAll"
+                                 />
                         </tbody>
                         <tbody v-else>
                             <tr>
