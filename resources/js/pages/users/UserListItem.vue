@@ -7,7 +7,7 @@ import { error } from 'toastr';
 
 const toastr = useToastr();
 
-defineProps({
+const props = defineProps({
     user: Object,
     index: Number,
 });
@@ -55,14 +55,19 @@ axios.put(`/api/users/${user.id}/change-role`, {
 
 };
 
+const toggleSelected = () => {
+    emit('toggleSelection', props.user);
+};
+
 </script>
 <template>
     <tr>
+        <td id="bulk-delete"> <input @change="toggleSelected" for="bulk-delete" type="checkbox" class="form-control"> </td>
         <td>{{ index + 1 }}</td>
         <td>{{ user.name }}</td>
         <td>{{ user.email }}</td>
         <td>{{ formatDate(user.created_at) }}</td>
-        
+
         <td>
             <select class="form-control" @change="changeRole(user, $event.target.value)">
                 <option v-for="role in roles" :key="role.value" :value="role.value" :selected="(user.role == role.value)">{{ role.name }}</option>

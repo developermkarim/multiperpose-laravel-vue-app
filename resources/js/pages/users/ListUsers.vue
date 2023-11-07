@@ -1,30 +1,23 @@
-/*  Vue Component of use Here for data fetching of API OF LARAVEL   */
 <script setup>
 import axios from 'axios';
 import { ref, onMounted, reactive, watch } from 'vue';
 import { Form, Field, useResetForm } from 'vee-validate';
 import * as yup from 'yup';
 import { useToastr } from '../../toastr.js';
-import { formatDate } from '../../helper.js';
 import UserListItem from './UserListItem.vue';
-import { error } from 'toastr';
 import { debounce } from 'lodash';
+import { Bootstrap4Pagination } from 'laravel-vue-pagination';
 
 const toastr = useToastr();
-const users = ref([]);
+const users = ref({'data': []});
 const editing = ref(false);
 const formValues = ref();
 const form = ref(null);
-const searchQuery = ref(null);
-// const userIdBeingDeleted = ref(null);
 
-const getUsers = () => {
-    axios.get('/api/users')
+const getUsers = (page = 1) => {
+    axios.get(`/api/users?page=${page}`)
         .then((response) => {
             users.value = response.data;
-        })
-        .catch(error =>{
-            console.log(error);
         })
 }
 
@@ -57,15 +50,9 @@ const createUser = (values, { resetForm, setErrors }) => {
         })
 };
 
-const addUser = ({resetForm}) => {
+const addUser = () => {
     editing.value = false;
     $('#userFormModal').modal('show');
-        formValues.value = {
-        id:'',
-        name:'',
-        email:'',
-    };
-    
 };
 
 const editUser = (user) => {
@@ -79,7 +66,7 @@ const editUser = (user) => {
     };
 };
 
-const updateUser = (values, {setErrors}) => {
+const updateUser = (values, { setErrors }) => {
     axios.put('/api/users/' + formValues.value.id, values)
         .then((response) => {
             const index = users.value.findIndex(user => user.id === response.data.id);
@@ -101,22 +88,11 @@ const handleSubmit = (values, actions) => {
     }
 }
 
-/* const confirmUserDeletion = (user) => {
-    userIdBeingDeleted.value = user.id;
-    $('#deleteUserModal').modal('show');
-}; */
-
 const userDeleted = (userId) => {
-
-/*    axios.delete(`/api/users/${userIdBeingDeleted.value}`)
-    .then(() => {
-        $('#deleteUserModal').modal('hide'); 
-        users.value = users.value.filter(user => user.id !== userIdBeingDeleted.value);
-        toastr.success('User deleted successfully!');
-    });  */
-
     users.value = users.value.filter(user => user.id !== userId);
 };
+
+const searchQuery = ref(null);
 
 const search = () => {
     axios.get('/api/users/search', {
@@ -124,12 +100,40 @@ const search = () => {
             query: searchQuery.value
         }
     })
+        .then(response => {
+            users.value = response.data;
+        })
+        .catch(error => {
+            console.log(error);
+        })
+};
+
+const selectedUsers = ref([]);
+console.log( 'initial-Result is ref([]) ' + selectedUsers.value);
+const toggleSelection = (user) => {
+    const index = selectedUsers.value.indexOf(user.id);
+    console.log(index);
+    if (index === -1) {
+        selectedUsers.value.push(user.id); // suppose [36, 35, 33] if not added these (36, 35, 33) into the selectedUsers.value,
+        console.log(selectedUsers.value + ` this is value.push(${user.id})`); 
+    } else {
+        selectedUsers.value.splice(index, 1); // [36, 35] if found , will be removed from selectedUsers.value like 33 removed after toggle select
+        console.log(selectedUsers.value + ` this is value.splice(${user.id})`); 
+    }
+    console.log(selectedUsers.value);
+};
+
+const bulkDelete = () => {
+    axios.delete('/api/users', {
+        data: {
+            ids: selectedUsers.value
+        }
+    })
     .then(response => {
-        users.value = response.data;
-    })
-    .catch(error => {
-        console.log(error);
-    })
+        users.value.data = users.value.data.filter(user => !selectedUsers.value.includes(user.id)); // the Ids of selected not found in the unselected ids, the unselected ids will be return after the multi deleted.
+        selectedUsers.value = [];
+        toastr.success(response.data.message);
+    });
 };
 
 watch(searchQuery, debounce(() => {
@@ -161,23 +165,25 @@ onMounted(() => {
 
     <div class="content">
         <div class="container-fluid">
-            <div class="d-flex justify-content-between align-items-center">
-            <div>
-            <button @click="addUser" type="button" class="mb-2 btn btn-primary">
-                Add New User
-            </button>
+            <div class="d-flex justify-content-between">
+                <div>
+                    <button @click="addUser" type="button" class="mb-2 btn btn-primary">
+                        Add New User
+                    </button>
+                    <button v-if="selectedUsers.length > 0" @click="bulkDelete" type="button" class="ml-2 mb-2 btn btn-danger">
+                        Delete Selected
+                    </button>
+                </div>
+                <div>
+                    <input type="text" v-model="searchQuery" class="form-control" placeholder="Search..." />
+                </div>
             </div>
-            <div>
-            <input type="text" v-model="searchQuery" class="form-control" placeholder="Search...." />
-
-            </div>
-          </div>
-
             <div class="card">
                 <div class="card-body">
                     <table class="table table-bordered">
                         <thead>
                             <tr>
+                                <th><input type="checkbox" /></th>
                                 <th style="width: 10px">#</th>
                                 <th>Name</th>
                                 <th>Email</th>
@@ -186,37 +192,19 @@ onMounted(() => {
                                 <th>Options</th>
                             </tr>
                         </thead>
-                        <tbody v-if="users.length > 0">
-                    <!--         <tr v-for="(user, index) in users" :key="user.id">
-                                <td>{{ index + 1 }}</td>
-                                <td>{{ user.name }}</td>
-                                <td>{{ user.email }}</td>
-                                <td> {{ formatDate(user.created_at)  }} </td>
-                                <td>{{user.role == 2 ?'User':"Admin"}}</td>
-                                <td>
-                                    <a href="#" @click.prevent="editUser(user)"><i class="fa fa-edit"></i></a>
-                                    <a href="#" @click.prevent="confirmUserDeletion(user)"><i class="fa fa-trash text-danger ml-2"></i></a>
-                                </td>
-                            </tr> -->
-                            <UserListItem v-for="(user,index) in users"
-                            :key="user.id"
-                            :user=user
-                            :index=index
-                            @edit-user="editUser"
-                            @user-deleted="userDeleted"
-                            />
+                        <tbody v-if="users.data.length > 0">
+                            <UserListItem v-for="(user, index) in users.data" :key="user.id" :user=user :index=index
+                                @edit-user="editUser" @user-deleted="userDeleted" @toggle-selection="toggleSelection" />
                         </tbody>
-
                         <tbody v-else>
-                        <tr>
-                            <td colspan="6" class="text-center">
-                                No Result Found ... with {{ searchQuery }}
-                            </td>
-                        </tr>
+                            <tr>
+                                <td colspan="6" class="text-center">No results found...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
+            <Bootstrap4Pagination :data="users" @pagination-change-page="getUsers" />
         </div>
     </div>
 
@@ -233,26 +221,29 @@ onMounted(() => {
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <Form ref="form" @submit="handleSubmit" :validation-schema="editing ? editUserSchema : createUserSchema" v-slot="{ errors }" :initial-values="formValues">
+                <Form ref="form" @submit="handleSubmit" :validation-schema="editing ? editUserSchema : createUserSchema"
+                    v-slot="{ errors }" :initial-values="formValues">
                     <div class="modal-body">
                         <div class="form-group">
                             <label for="name">Name</label>
-                            <Field name="name" type="text" class="form-control" :class="{'is-invalid': errors.name }" id="name"
-                                aria-describedby="nameHelp" placeholder="Enter full name" />
+                            <Field name="name" type="text" class="form-control" :class="{ 'is-invalid': errors.name }"
+                                id="name" aria-describedby="nameHelp" placeholder="Enter full name" />
                             <span class="invalid-feedback">{{ errors.name }}</span>
                         </div>
 
                         <div class="form-group">
                             <label for="email">Email</label>
-                            <Field name="email" type="email" class="form-control " :class="{'is-invalid': errors.email }" id="email"
-                                aria-describedby="nameHelp" placeholder="Enter full name" />
+                            <Field name="email" type="email" class="form-control "
+                                :class="{ 'is-invalid': errors.email }" id="email" aria-describedby="nameHelp"
+                                placeholder="Enter full name" />
                             <span class="invalid-feedback">{{ errors.email }}</span>
                         </div>
 
                         <div class="form-group">
                             <label for="email">Password</label>
-                            <Field name="password" type="password" class="form-control " :class="{'is-invalid': errors.password }" id="password"
-                                aria-describedby="nameHelp" placeholder="Enter password" />
+                            <Field name="password" type="password" class="form-control "
+                                :class="{ 'is-invalid': errors.password }" id="password" aria-describedby="nameHelp"
+                                placeholder="Enter password" />
                             <span class="invalid-feedback">{{ errors.password }}</span>
                         </div>
                     </div>
@@ -264,6 +255,4 @@ onMounted(() => {
             </div>
         </div>
     </div>
-
 </template>
-/* This File will be exported to route file where all routes are defined */

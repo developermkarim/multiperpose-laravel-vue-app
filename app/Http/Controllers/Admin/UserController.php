@@ -5,15 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use function PHPSTORM_META\map;
+
 
 class UserController extends Controller
 {
     //
     public function index()
     {
-        $user = User::latest()->get();
+        $user = User::latest()->paginate();
         
    /*      $user = User::latest()->get()->map(function($user){
 
@@ -33,7 +32,7 @@ class UserController extends Controller
         request()->validate([
             'name'=>'required|string',
             'email' => 'required|unique:users,email',
-            'password'=>'required|min:5|max:8'
+            'password'=>'required|min:5|max:12'
         ]);
 
         $user = User::create([
@@ -86,8 +85,18 @@ class UserController extends Controller
     {
         $searchQuery = request('query');
 
-        $users = User::where('name', 'like', "%{$searchQuery}%")->get();
+        $users = User::where('name', 'like', "%{$searchQuery}%")->paginate();
 
         return response()->json($users);
+    }
+
+    public function bulkDeleted()
+    {
+        $ids = request('ids');
+
+        $selectedDelete = User::whereIn('id', $ids)->delete();
+        if($selectedDelete){
+            return response()->json(['message'=> 'Users deleted successfully']);
+        };
     }
 }

@@ -34,6 +34,8 @@ Route::put('/api/users/{user}/change-role', [UserController::class, 'changeRole'
 
 Route::get('/api/users/search', [UserController::class, 'searchText']);
 
+Route::delete('/api/users', [UserController::class, 'bulkDeleted']);
+
 Route::get('{view}',AdminApplicationController::class)->where('view','(.*)');
 /* Route::prefix('admin/')->name('admin.')->controller(adminHomeController::class)->group(function(){
 Route::get('dashboard','dashboard')->name('.dashboard');
