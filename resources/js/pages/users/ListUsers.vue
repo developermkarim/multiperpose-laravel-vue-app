@@ -18,6 +18,8 @@ const getUsers = (page = 1) => {
     axios.get(`/api/users?page=${page}`)
         .then((response) => {
             users.value = response.data;
+            selectedUsers.value = [];
+            selectAll.value = false;
         })
 }
 
@@ -38,7 +40,7 @@ const editUserSchema = yup.object({
 const createUser = (values, { resetForm, setErrors }) => {
     axios.post('/api/users', values)
         .then((response) => {
-            users.value.unshift(response.data);
+            users.value.data.unshift(response.data);
             $('#userFormModal').modal('hide');
             resetForm();
             toastr.success('User created successfully!');
@@ -88,10 +90,6 @@ const handleSubmit = (values, actions) => {
     }
 }
 
-const userDeleted = (userId) => {
-    users.value = users.value.filter(user => user.id !== userId);
-};
-
 const searchQuery = ref(null);
 
 const search = () => {
@@ -119,6 +117,21 @@ const toggleSelection = (user) => {
     console.log(selectedUsers.value);
 };
 
+const userIdBeingDeleted = ref(null);
+const confirmUserDeletion = (id) => {
+    userIdBeingDeleted.value = id;
+    $('#deleteUserModal').modal('show');
+};
+
+const deleteUser = () => {
+    axios.delete(`/api/users/${userIdBeingDeleted.value}`)
+    .then(() => {
+        $('#deleteUserModal').modal('hide');
+        toastr.success('User deleted successfully!');
+        users.value.data = users.value.data.filter(user => user.id !== userIdBeingDeleted.value);
+    });
+};
+
 const bulkDelete = () => {
     axios.delete('/api/users', {
         data: {
@@ -134,15 +147,14 @@ const bulkDelete = () => {
 };
 
 const selectAll = ref(false);
-const selectAllUsers = () =>{
+const selectAllUsers = () => {
     if (selectAll.value) {
         selectedUsers.value = users.value.data.map(user => user.id);
-    }else{
+    } else {
         selectedUsers.value = [];
     }
-    console.log(selectAllUsers.value);
+    console.log(selectedUsers.value);
 }
-
 
 watch(searchQuery, debounce(() => {
     search();
@@ -174,13 +186,18 @@ onMounted(() => {
     <div class="content">
         <div class="container-fluid">
             <div class="d-flex justify-content-between">
-                <div>
+                <div class="d-flex">
                     <button @click="addUser" type="button" class="mb-2 btn btn-primary">
+                        <i class="fa fa-plus-circle mr-1"></i>
                         Add New User
                     </button>
-                    <button v-if="selectedUsers.length > 0" @click="bulkDelete" type="button" class="ml-2 mb-2 btn btn-danger">
-                        Delete Selected
-                    </button>
+                    <div v-if="selectedUsers.length > 0">
+                        <button @click="bulkDelete" type="button" class="ml-2 mb-2 btn btn-danger">
+                            <i class="fa fa-trash mr-1"></i>
+                            Delete Selected
+                        </button>
+                        <span class="ml-2">Selected {{ selectedUsers.length }} users</span>
+                    </div>
                 </div>
                 <div>
                     <input type="text" v-model="searchQuery" class="form-control" placeholder="Search..." />
@@ -191,7 +208,7 @@ onMounted(() => {
                     <table class="table table-bordered">
                         <thead>
                             <tr>
-                                <th><input type="checkbox" @change="selectAllUsers" v-model="selectAll" /></th>
+                                <th><input type="checkbox" v-model="selectAll" @change="selectAllUsers" /></th>
                                 <th style="width: 10px">#</th>
                                 <th>Name</th>
                                 <th>Email</th>
@@ -201,10 +218,13 @@ onMounted(() => {
                             </tr>
                         </thead>
                         <tbody v-if="users.data.length > 0">
-                            <UserListItem v-for="(user, index) in users.data" :key="user.id" :user=user :index=index
-                                @edit-user="editUser" @user-deleted="userDeleted" @toggle-selection="toggleSelection"
-                                :select-all="selectAll"
-                                 />
+                            <UserListItem v-for="(user, index) in users.data"
+                                :key="user.id"
+                                :user=user :index=index
+                                @edit-user="editUser"
+                                @confirm-user-deletion="confirmUserDeletion"
+                                @toggle-selection="toggleSelection"
+                                :select-all="selectAll" />
                         </tbody>
                         <tbody v-else>
                             <tr>
@@ -262,6 +282,29 @@ onMounted(() => {
                         <button type="submit" class="btn btn-primary">Save</button>
                     </div>
                 </Form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteUserModal" data-backdrop="static" tabindex="-1" role="dialog"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">
+                        <span>Delete User</span>
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h5>Are you sure you want to delete this user ?</h5>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button @click.prevent="deleteUser" type="button" class="btn btn-primary">Delete User</button>
+                </div>
             </div>
         </div>
     </div>
